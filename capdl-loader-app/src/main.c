@@ -910,7 +910,7 @@ static void create_irq_caps(CDL_Model *spec)
 }
 
 /* Mint a cap that will not be given to the user */
-/* Used for badging interrupt notifications and, in the RT kernel, fault eps */
+/* Used for badging interrupt notifications */
 static void mint_cap(CDL_ObjID object_id, int free_slot, seL4_Word badge, seL4_CapRights_t rights)
 {
     seL4_CPtr dest_root = seL4_CapInitThreadCNode;
@@ -1029,8 +1029,8 @@ static void init_tcb(CDL_Model *spec, CDL_ObjID tcb)
 #endif
 
     seL4_CPtr sel4_fault_ep;
+    seL4_Word sel4_fault_ep_data = seL4_NilData;
     seL4_CPtr UNUSED sel4_tempfault_ep;
-    seL4_CPtr badged_sel4_fault_ep;
 
     if (config_set(CONFIG_KERNEL_MCS)) {
         /* Fault ep cptrs are in the caller's cspace */
@@ -1052,12 +1052,7 @@ static void init_tcb(CDL_Model *spec, CDL_ObjID tcb)
             seL4_Word fault_ep_badge = get_capData(CDL_Cap_Data(cdl_fault_ep));
             seL4_CapRights_t fault_ep_rights = CDL_seL4_Cap_Rights(cdl_fault_ep);
             if (fault_ep_badge != 0 || !seL4_CapRights_get_capAllowAllRights(fault_ep_rights)) {
-                badged_sel4_fault_ep = (seL4_CPtr) get_free_slot();
-                mint_cap(CDL_Cap_ObjID(cdl_fault_ep), badged_sel4_fault_ep,
-                         fault_ep_badge, fault_ep_rights);
-                next_free_slot();
-                sel4_fault_ep = badged_sel4_fault_ep;
-
+                sel4_fault_ep_data = seL4_Endpoint_CapData_new(fault_ep_badge, fault_ep_rights.words[0] & MASK(seL4_CapRightsBits)).words[0];
             }
         }
     } else {
@@ -1105,7 +1100,7 @@ static void init_tcb(CDL_Model *spec, CDL_ObjID tcb)
     }
 
     error = seL4_TCB_SetSchedParams(sel4_tcb, seL4_CapInitThreadTCB, max_priority, priority,
-                                    sel4_sc, sel4_fault_ep);
+                                    sel4_sc, sel4_fault_ep, sel4_fault_ep_data);
     ZF_LOGF_IFERR(error, "");
 
     error = seL4_TCB_SetTimeoutEndpoint(sel4_tcb, sel4_tempfault_ep);

@@ -1104,11 +1104,11 @@ static void init_tcb(CDL_Model *spec, CDL_ObjID tcb)
         }
     }
 
-    error = seL4_TCB_SetSchedParams(sel4_tcb, seL4_CapInitThreadTCB, max_priority, priority,
-                                    sel4_sc, sel4_fault_ep, sel4_fault_ep_data, sel4_fault_ep_rights);
+    error = seL4_TCB_SetSchedParamsFH(sel4_tcb, seL4_CapInitThreadTCB, max_priority, priority,
+                                      sel4_sc, sel4_fault_ep, sel4_fault_ep_data, sel4_fault_ep_rights);
     ZF_LOGF_IFERR(error, "");
 
-    error = seL4_TCB_SetTimeoutEndpoint(sel4_tcb, sel4_tempfault_ep, sel4_tempfault_ep_data, sel4_tempfault_ep_rights);
+    error = seL4_TCB_SetTimeoutEndpointBadge(sel4_tcb, sel4_tempfault_ep, sel4_tempfault_ep_data, sel4_tempfault_ep_rights);
 #else
     if (cdl_cspace_root && cdl_vspace_root && sel4_ipcbuffer) {
         error = seL4_TCB_Configure(sel4_tcb, sel4_fault_ep,
